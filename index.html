@@ -1,72 +1,42 @@
 <!doctype html>
-<html lang="ru" xmlns="http://www.w3.org/1999/html">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Личный сайт: обо мне, контакты, отзывы и примеры работ.">
+    <meta name="theme-color" content="#171717">
     <title>Website</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
 </head>
-
 <body>
 <header class="header">
     <a href="https://github.com/vladislavitgit" class="logo">My GitHub account</a>
-    <nav class="nav">
-        <a href="#" id="nav-home">Главная</a>
-        <a href="#" id="nav-about">Обо мне</a>
-        <a href="#" id="nav-contacts">Контакты</a>
-        <a href="#" id="nav-reviews">Отзывы</a>
+    <nav class="nav" aria-label="Основное меню">
+        <a href="#home" id="nav-home" aria-current="page">Главная</a>
+        <a href="#about" id="nav-about">Обо мне</a>
+        <a href="#contacts" id="nav-contacts">Контакты</a>
+        <a href="#reviews" id="nav-reviews">Отзывы</a>
     </nav>
-    <a href="#" id="reservation" class="nav-reservation">Записаться онлайн</a>
 </header>
-
 <main id="content" class="content-section">
     <h1>Добро пожаловать!</h1>
     <p>Эта страница - пример моей работы.</p>
-    <h3>Наши продукты</h3>
-    <div id="products" class="products-list" aria-live="polite">
-        <p></p>
-    </div>
+    <p class="project-link"><a href="../Website-1/">Пример сайта с каталогом товаров и услуг ↗</a></p>
 </main>
-
-<template id="about-template" class="about">
+<template id="about-template">
     <h1>Обо мне</h1>
     <p>Здесь будет информация обо мне.</p>
 </template>
-
-<template id="contacts-template" class="contacts">
+<template id="contacts-template">
     <h1>Контакты</h1>
     <p class="contacts-description">Местоположение на карте:</p>
     <div id="contacts-map" class="map-container" aria-label="Интерактивная карта Яндекса"></div>
-    <p class="map-link">
-        <a href="https://yandex.ru/maps/?um=constructor%3A0d15896ab19a686df7d42f3577a51427f5d81a88d6eb0e412e3c3c3ef89835cc&amp;source=constructorLink" target="_blank" rel="noopener noreferrer">Открыть карту в Яндекс Картах</a>
-    </p>
+    <p class="map-link"><a href="https://yandex.ru/maps/?um=constructor%3A0d15896ab19a686df7d42f3577a51427f5d81a88d6eb0e412e3c3c3ef89835cc&amp;source=constructorLink" target="_blank" rel="noopener noreferrer">Открыть карту в Яндекс Картах</a></p>
 </template>
-
-<template id="reviews-template" class="reviews">
+<template id="reviews-template">
     <h1>Отзывы</h1>
     <p>Здесь будут отзывы.</p>
 </template>
-
-<div id="reservation-overlay" class="reservation-overlay" aria-hidden="true">
-    <section class="reservation-modal" role="dialog" aria-modal="true" aria-labelledby="reservation-title">
-        <button type="button" id="reservation-back" class="reservation-back">Назад</button>
-        <h1 id="reservation-title">Запись онлайн</h1>
-        <p>Оставьте свои контакты, и мы свяжемся с вами.</p>
-        <form id="reservation-form" class="reservation-form">
-            <label>
-                Имя
-                <input type="text" name="name" autocomplete="name" required maxlength="100">
-            </label>
-            <label>
-                Телефон
-                <input type="tel" name="phone" autocomplete="tel" required maxlength="30" placeholder="+7 900 000-00-00">
-            </label>
-            <button type="submit">Отправить</button>
-            <p id="reservation-status" class="reservation-status" role="status" aria-live="polite"></p>
-        </form>
-    </section>
-</div>
-
-<script src="script.js"></script>
 </body>
 </html>
