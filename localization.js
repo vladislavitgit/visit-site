@@ -4,7 +4,7 @@ const messages = {
     home: ['Главная', 'Home'],
     about: ['Обо мне', 'About me'],
     contacts: ['Контакты', 'Contact'],
-    reviews: ['Отзывы', 'Testimonials'],
+    reviews: ['Отзывы', 'Reviews'],
     name: ['Владислав', 'Vladislav'],
     profession: ['веб-разработка', 'web development'],
     welcomeFirst: ['Добро', 'Welcome'],
