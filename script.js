@@ -100,6 +100,12 @@ reducedMotion.addEventListener('change', () => {
 });
 
 const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
+const updateSpotlightWidth = () => {
+    document.documentElement.style.setProperty('--viewport-width', `${document.documentElement.clientWidth}px`);
+};
+updateSpotlightWidth();
+if ('ResizeObserver' in window) new ResizeObserver(updateSpotlightWidth).observe(document.documentElement);
+else window.addEventListener('resize', updateSpotlightWidth);
 document.querySelectorAll('.spotlight').forEach(element => {
     let frame = 0;
     let x = 0;
@@ -111,7 +117,7 @@ document.querySelectorAll('.spotlight').forEach(element => {
         if (frame) return;
         frame = requestAnimationFrame(() => {
             const bounds = element.getBoundingClientRect();
-            element.style.setProperty('--pointer-x', `${x - bounds.left}px`);
+            element.style.setProperty('--pointer-x', `${x}px`);
             element.style.setProperty('--pointer-y', `${y - bounds.top}px`);
             frame = 0;
         });
