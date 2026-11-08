@@ -126,6 +126,7 @@ button:focus-visible, a:focus-visible {
     font-size: 13px;
     line-height: 1.4;
     color: var(--muted);
+    touch-action: manipulation;
 }
 .nav a {
     padding: 12px 20px;
@@ -141,8 +142,10 @@ button:focus-visible, a:focus-visible {
 .nav a[aria-current="page"], .language-switch button[aria-pressed="true"] {
     color: var(--accent);
 }
-.nav a:hover, .language-switch button:hover {
-    color: var(--text);
+@media (hover: hover) and (pointer: fine) {
+    .nav a:hover, .language-switch button:hover {
+        color: var(--text);
+    }
 }
 .nav-indicator, .language-indicator {
     position: absolute;
@@ -155,6 +158,7 @@ button:focus-visible, a:focus-visible {
     transform: translateX(var(--nav-x, 0px));
     transition: transform 450ms var(--ease), width 450ms var(--ease);
     pointer-events: none;
+    will-change: transform;
 }
 .nav:not(.is-ready) .nav-indicator, .language-switch:not(.is-ready) .language-indicator {
     transition: none;
