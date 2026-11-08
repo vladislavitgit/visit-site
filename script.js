@@ -1,73 +1,146 @@
-const content = document.getElementById('content');
-const homeContent = document.createDocumentFragment();
-homeContent.append(...Array.from(content.childNodes, node => node.cloneNode(true)));
-const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const pages = Object.fromEntries(['home', 'about', 'contacts', 'reviews'].map(page => [
-    page,
-    { link: document.getElementById(`nav-${page}`), template: document.getElementById(`${page}-template`) }
-]));
-const timers = new Set();
-let currentPage = 'home';
+import { initializeSculpture } from './sculpture.js';
+import { initializeLanguage, translate } from './localization.js';
+
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const nav = document.querySelector('.nav');
+const links = [...nav.querySelectorAll('a')];
+const views = [...document.querySelectorAll('.page-view')];
+const pages = ['home', 'about', 'contacts', 'reviews'];
+let currentPage = '';
+let requestedPage = '';
 let transitionId = 0;
+let swapTimer;
+let entranceTimer;
 
-function schedule(callback, delay, id) {
-    const timer = setTimeout(() => {
-        timers.delete(timer);
-        if (id === transitionId) callback();
-    }, delay);
-    timers.add(timer);
+function moveIndicator(link) {
+    nav.style.setProperty('--nav-x', `${link.offsetLeft}px`);
+    nav.style.setProperty('--nav-width', `${link.offsetWidth}px`);
 }
 
-function initializeContactsMap() {
-    const container = document.getElementById('contacts-map');
-    if (!container) return;
-    const script = document.createElement('script');
-    script.async = true;
-    script.charset = 'utf-8';
-    script.src = 'https://api-maps.yandex.ru/services/constructor/1.0/js/?um=constructor%3A0d15896ab19a686df7d42f3577a51427f5d81a88d6eb0e412e3c3c3ef89835cc&width=100%25&height=100%25&lang=ru_RU&scroll=true';
-    container.append(script);
-}
-
-function renderPage(page, id) {
-    if (id !== transitionId) return;
-    content.replaceChildren(page === 'home' ? homeContent.cloneNode(true) : pages[page].template.content.cloneNode(true));
-    if (page === 'contacts') initializeContactsMap();
-    content.classList.remove('fade-out', 'staged-in');
-    if (reducedMotion.matches) return;
-    const elements = [...content.children];
-    content.classList.add('staged-in');
-    requestAnimationFrame(() => {
-        if (id !== transitionId) return;
-        elements.forEach((element, index) => schedule(() => element.classList.add('stagger-in'), index * 300, id));
+function highlightNavigation(page) {
+    links.forEach(link => {
+        if (link.id === `nav-${page}`) link.setAttribute('aria-current', 'page');
+        else link.removeAttribute('aria-current');
     });
-    schedule(() => {
-        content.classList.remove('staged-in');
-        elements.forEach(element => element.classList.remove('stagger-in'));
-    }, Math.max(700, (elements.length - 1) * 300 + 320), id);
+    moveIndicator(document.getElementById(`nav-${page}`));
+}
+
+function showPage(page, id) {
+    if (id !== transitionId) return;
+    const changed = currentPage !== page;
+    views.forEach(view => {
+        view.hidden = view.id !== `${page}-view`;
+        view.inert = view.hidden;
+        view.classList.remove('is-leaving', 'is-entering');
+    });
+    currentPage = page;
+    const view = document.getElementById(`${page}-view`);
+    if (changed) window.scrollTo({ top: 0, behavior: 'instant' });
+    updateTitle();
+    if (reducedMotion.matches) return;
+    void view.offsetWidth;
+    view.classList.add('is-entering');
+    entranceTimer = setTimeout(() => {
+        if (id === transitionId) view.classList.remove('is-entering');
+    }, 1200);
 }
 
 function switchPage() {
-    const hash = window.location.hash.slice(1);
-    const page = Object.hasOwn(pages, hash) ? hash : 'home';
-    if (page === currentPage) return;
-    currentPage = page;
+    const hash = location.hash.slice(1);
+    const page = pages.includes(hash) ? hash : 'home';
+    if (page === requestedPage) return;
+    requestedPage = page;
     const id = ++transitionId;
-    timers.forEach(clearTimeout);
-    timers.clear();
-    content.classList.remove('fade-out', 'staged-in');
-    [...content.children].forEach(element => element.classList.remove('stagger-in'));
-    document.body.classList.add('view-switched');
-    Object.entries(pages).forEach(([name, data]) => {
-        data.link.classList.toggle('active', name === page);
-        if (name === page) data.link.setAttribute('aria-current', 'page');
-        else data.link.removeAttribute('aria-current');
-    });
-    if (reducedMotion.matches) renderPage(page, id);
-    else {
-        content.classList.add('fade-out');
-        schedule(() => renderPage(page, id), 440, id);
+    clearTimeout(swapTimer);
+    clearTimeout(entranceTimer);
+    highlightNavigation(page);
+    if (!currentPage || reducedMotion.matches) {
+        showPage(page, id);
+        return;
     }
+    const outgoing = document.getElementById(`${currentPage}-view`);
+    if (currentPage === page) {
+        outgoing.classList.remove('is-leaving', 'is-entering');
+        outgoing.inert = false;
+        return;
+    }
+    outgoing.classList.remove('is-entering');
+    outgoing.classList.add('is-leaving');
+    outgoing.inert = true;
+    swapTimer = setTimeout(() => showPage(page, id), 210);
 }
 
+links.forEach(link => {
+    link.addEventListener('pointerenter', () => moveIndicator(link));
+    link.addEventListener('focus', () => moveIndicator(link));
+    link.addEventListener('click', () => {
+        if (link.id === `nav-${currentPage}` && currentPage === requestedPage) {
+            window.scrollTo({ top: 0, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
+        }
+    });
+});
+nav.addEventListener('pointerleave', () => highlightNavigation(requestedPage));
+nav.addEventListener('focusout', event => {
+    if (!nav.contains(event.relatedTarget)) highlightNavigation(requestedPage);
+});
 window.addEventListener('hashchange', switchPage);
+const resizeNavigation = () => {
+    highlightNavigation(requestedPage);
+    if (currentPage !== requestedPage) {
+        clearTimeout(swapTimer);
+        showPage(requestedPage, transitionId);
+    }
+};
+if ('ResizeObserver' in window) new ResizeObserver(resizeNavigation).observe(nav);
+else window.addEventListener('resize', resizeNavigation);
+reducedMotion.addEventListener('change', () => {
+    clearTimeout(swapTimer);
+    clearTimeout(entranceTimer);
+    showPage(requestedPage, ++transitionId);
+});
+
+const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
+document.querySelectorAll('.spotlight').forEach(element => {
+    let frame = 0;
+    let x = 0;
+    let y = 0;
+    element.addEventListener('pointermove', event => {
+        if (!finePointer.matches || reducedMotion.matches) return;
+        x = event.clientX;
+        y = event.clientY;
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+            const bounds = element.getBoundingClientRect();
+            element.style.setProperty('--pointer-x', `${x - bounds.left}px`);
+            element.style.setProperty('--pointer-y', `${y - bounds.top}px`);
+            frame = 0;
+        });
+    });
+});
+
+const copyStatus = document.getElementById('copy-status');
+let toastTimer;
+document.querySelectorAll('.copy-button').forEach(button => button.addEventListener('click', async () => {
+    try {
+        await navigator.clipboard.writeText(button.dataset.copy);
+        copyStatus.textContent = button.dataset.success;
+    } catch {
+        copyStatus.textContent = translate('copyFailed');
+    }
+    clearTimeout(toastTimer);
+    copyStatus.classList.add('is-visible');
+    toastTimer = setTimeout(() => copyStatus.classList.remove('is-visible'), 3000);
+}));
+
+function updateTitle() {
+    document.title = `${translate(requestedPage || 'home')} — ${translate('name')}`;
+}
+initializeLanguage(() => {
+    updateTitle();
+    clearTimeout(toastTimer);
+    copyStatus.classList.remove('is-visible');
+    requestAnimationFrame(() => highlightNavigation(requestedPage || 'home'));
+});
 switchPage();
+requestAnimationFrame(() => nav.classList.add('is-ready'));
+initializeSculpture(document.querySelector('.sculpture'), reducedMotion);
