@@ -11,6 +11,11 @@ export function initializeSculpture(button, reducedMotion) {
     const planetColumns = 14;
     const tau = Math.PI * 2;
     const shapes = [0, 1, 2].map(createShape);
+    const projected = shapes[0].map(() => [0, 0, 0]);
+    const rowConnectors = [[planetColumns - 1, planetColumns], [columns - 1, 0]];
+    const trailColumns = [0, 8];
+    const cosZ = Math.cos(-.36);
+    const sinZ = Math.sin(-.36);
     let mode = 0;
     let previousSaturn = 0;
     let previous = shapes[0];
@@ -18,6 +23,8 @@ export function initializeSculpture(button, reducedMotion) {
     let progress = 1;
     let width = 0;
     let height = 0;
+    let pixelRatio = 0;
+    let glow;
     let frame = 0;
     let lastTime = 0;
     let visible = false;
@@ -105,30 +112,26 @@ export function initializeSculpture(button, reducedMotion) {
         const sinX = Math.sin(pitch);
         const cosY = Math.cos(yaw + angle);
         const sinY = Math.sin(yaw + angle);
-        const cosZ = Math.cos(-.36);
-        const sinZ = Math.sin(-.36);
         const scale = Math.min(width, height) * 1.16;
         context.clearRect(0, 0, width, height);
-        const glow = context.createRadialGradient(width * .5, height * .5, 0, width * .5, height * .5, width * .46);
-        glow.addColorStop(0, 'rgba(163, 204, 144, .045)');
-        glow.addColorStop(1, 'rgba(163, 204, 144, 0)');
         context.fillStyle = glow;
         context.fillRect(0, 0, width, height);
-        function rotate([x, y, z]) {
+        for (let index = 0; index < target.length; index++) {
+            const point = target[index];
+            const origin = previous[index];
+            const x = origin[0] + (point[0] - origin[0]) * mix;
+            const y = origin[1] + (point[1] - origin[1]) * mix;
+            const z = origin[2] + (point[2] - origin[2]) * mix;
             const y1 = y * cosX - z * sinX;
             const z1 = y * sinX + z * cosX;
             const x1 = x * cosY + z1 * sinY;
-            return [x1 * cosZ - y1 * sinZ, x1 * sinZ + y1 * cosZ, -x * sinY + z1 * cosY];
+            const z2 = -x * sinY + z1 * cosY;
+            const perspective = scale / (5.8 + z2);
+            const output = projected[index];
+            output[0] = (x1 * cosZ - y1 * sinZ) * perspective + width / 2;
+            output[1] = (x1 * sinZ + y1 * cosZ) * perspective + height / 2;
+            output[2] = z2;
         }
-        function project(point) {
-            const [x, y, z] = rotate(point);
-            const perspective = scale / (5.8 + z);
-            return [x * perspective + width / 2, y * perspective + height / 2, z];
-        }
-        const projected = target.map((point, index) => {
-            const origin = previous[index];
-            return project(point.map((value, axis) => origin[axis] + (value - origin[axis]) * mix));
-        });
         context.lineWidth = .65;
         for (let row = 0; row < rows; row++) {
             const start = row * columns;
@@ -152,7 +155,7 @@ export function initializeSculpture(button, reducedMotion) {
             if (saturn < 1) {
                 context.strokeStyle = `rgba(189, 220, 173, ${opacity * (1 - saturn)})`;
                 context.beginPath();
-                for (const [from, to] of [[planetColumns - 1, planetColumns], [columns - 1, 0]]) {
+                for (const [from, to] of rowConnectors) {
                     context.moveTo(projected[start + from][0], projected[start + from][1]);
                     context.lineTo(projected[start + to][0], projected[start + to][1]);
                 }
@@ -170,7 +173,7 @@ export function initializeSculpture(button, reducedMotion) {
             context.stroke();
         }
         context.lineWidth = 1.2;
-        for (const column of [0, 8]) {
+        for (const column of trailColumns) {
             const head = Math.floor((angle * 2 + column / columns) % 1 * rows);
             for (let step = 0; step < 26; step++) {
                 const a = projected[((head - step + rows) % rows) * columns + column];
@@ -189,12 +192,20 @@ export function initializeSculpture(button, reducedMotion) {
     function resize() {
         const bounds = button.getBoundingClientRect();
         if (!bounds.width || !bounds.height) return;
+        const ratio = Math.min(devicePixelRatio || 1, 1.75);
+        if (width === bounds.width && height === bounds.height && pixelRatio === ratio) {
+            requestFrame();
+            return;
+        }
         width = bounds.width;
         height = bounds.height;
-        const ratio = Math.min(devicePixelRatio || 1, 1.75);
+        pixelRatio = ratio;
         canvas.width = Math.round(width * ratio);
         canvas.height = Math.round(height * ratio);
         context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        glow = context.createRadialGradient(width * .5, height * .5, 0, width * .5, height * .5, width * .46);
+        glow.addColorStop(0, 'rgba(163, 204, 144, .045)');
+        glow.addColorStop(1, 'rgba(163, 204, 144, 0)');
         requestFrame();
     }
 

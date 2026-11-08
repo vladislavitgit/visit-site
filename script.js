@@ -1,21 +1,24 @@
 import { initializeSculpture } from './sculpture.js';
 import { initializeLanguage, translate } from './localization.js';
+import { initializeIndicator } from './indicator.js';
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const nav = document.querySelector('.nav');
 const links = [...nav.querySelectorAll('a')];
 const views = [...document.querySelectorAll('.page-view')];
-const pages = ['home', 'about', 'contacts', 'reviews'];
+const pages = links.map(link => link.hash.slice(1));
 let currentPage = '';
 let requestedPage = '';
 let transitionId = 0;
 let swapTimer;
 let entranceTimer;
 
-function moveIndicator(link) {
-    nav.style.setProperty('--nav-x', `${link.offsetLeft}px`);
-    nav.style.setProperty('--nav-width', `${link.offsetWidth}px`);
-}
+const moveIndicator = initializeIndicator(nav, links, () => document.getElementById(`nav-${requestedPage || 'home'}`), () => {
+    if (currentPage !== requestedPage) {
+        clearTimeout(swapTimer);
+        showPage(requestedPage, transitionId);
+    }
+});
 
 function highlightNavigation(page) {
     links.forEach(link => {
@@ -71,28 +74,13 @@ function switchPage() {
 }
 
 links.forEach(link => {
-    link.addEventListener('pointerenter', () => moveIndicator(link));
-    link.addEventListener('focus', () => moveIndicator(link));
     link.addEventListener('click', () => {
         if (link.id === `nav-${currentPage}` && currentPage === requestedPage) {
             window.scrollTo({ top: 0, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
         }
     });
 });
-nav.addEventListener('pointerleave', () => highlightNavigation(requestedPage));
-nav.addEventListener('focusout', event => {
-    if (!nav.contains(event.relatedTarget)) highlightNavigation(requestedPage);
-});
 window.addEventListener('hashchange', switchPage);
-const resizeNavigation = () => {
-    highlightNavigation(requestedPage);
-    if (currentPage !== requestedPage) {
-        clearTimeout(swapTimer);
-        showPage(requestedPage, transitionId);
-    }
-};
-if ('ResizeObserver' in window) new ResizeObserver(resizeNavigation).observe(nav);
-else window.addEventListener('resize', resizeNavigation);
 reducedMotion.addEventListener('change', () => {
     clearTimeout(swapTimer);
     clearTimeout(entranceTimer);
@@ -100,8 +88,12 @@ reducedMotion.addEventListener('change', () => {
 });
 
 const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
+let viewportWidth = 0;
 const updateSpotlightWidth = () => {
-    document.documentElement.style.setProperty('--viewport-width', `${document.documentElement.clientWidth}px`);
+    const width = document.documentElement.clientWidth;
+    if (width === viewportWidth) return;
+    viewportWidth = width;
+    document.documentElement.style.setProperty('--viewport-width', `${width}px`);
 };
 updateSpotlightWidth();
 if ('ResizeObserver' in window) new ResizeObserver(updateSpotlightWidth).observe(document.documentElement);
@@ -146,7 +138,6 @@ initializeLanguage(() => {
     clearTimeout(toastTimer);
     copyStatus.classList.remove('is-visible');
     requestAnimationFrame(() => highlightNavigation(requestedPage || 'home'));
-});
+}, reducedMotion);
 switchPage();
-requestAnimationFrame(() => nav.classList.add('is-ready'));
 initializeSculpture(document.querySelector('.sculpture'), reducedMotion);
