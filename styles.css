@@ -2,7 +2,6 @@
     color-scheme: dark;
     --background: #000000;
     --surface: #080a09;
-    --surface-hover: #101410;
     --text: #eeefea;
     --muted: #91978f;
     --quiet: #727c6d;
@@ -104,8 +103,7 @@ button:focus-visible, a:focus-visible {
     opacity: 1;
     transform: translate(2px, -2px);
 }
-.nav {
-    margin-left: auto;
+.nav, .language-switch {
     position: relative;
     display: flex;
     gap: 4px;
@@ -114,21 +112,36 @@ button:focus-visible, a:focus-visible {
     border-radius: 99px;
     background: var(--surface);
 }
-.nav a {
+.nav {
+    margin-left: auto;
+}
+.language-switch {
+    flex-shrink: 0;
+    margin-left: -12px;
+}
+.nav a, .language-switch button {
     position: relative;
     z-index: 1;
-    padding: 12px 20px;
     border-radius: 99px;
     font-size: 13px;
     line-height: 1.4;
     color: var(--muted);
+}
+.nav a {
+    padding: 12px 20px;
     white-space: nowrap;
     transition: color 240ms ease;
 }
-.nav a[aria-current="page"] {
+.language-switch button {
+    padding: 12px 13px;
+    border: 0;
+    background: transparent;
+    transition: color 240ms, background 240ms;
+}
+.nav a[aria-current="page"], .language-switch button[aria-pressed="true"] {
     color: var(--accent);
 }
-.nav a:hover {
+.nav a:hover, .language-switch button:hover {
     color: var(--text);
 }
 .nav-indicator, .language-indicator {
@@ -143,40 +156,8 @@ button:focus-visible, a:focus-visible {
     transition: transform 450ms var(--ease), width 450ms var(--ease);
     pointer-events: none;
 }
-.nav:not(.is-ready) .nav-indicator {
+.nav:not(.is-ready) .nav-indicator, .language-switch:not(.is-ready) .language-indicator {
     transition: none;
-}
-.language-switch {
-    position: relative;
-    display: flex;
-    flex-shrink: 0;
-    margin-left: -12px;
-    gap: 4px;
-    padding: 5px;
-    border: 1px solid var(--border);
-    border-radius: 99px;
-    background: var(--surface);
-}
-.language-switch button {
-    position: relative;
-    z-index: 1;
-    padding: 12px 13px;
-    border: 0;
-    border-radius: 99px;
-    background: transparent;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.4;
-    transition: color 240ms, background 240ms;
-}
-.language-switch button[aria-pressed="true"] {
-    color: var(--accent);
-}
-.language-switch:not(.is-ready) .language-indicator {
-    transition: none;
-}
-.language-switch button:hover {
-    color: var(--text);
 }
 #content {
     outline: none;
@@ -398,17 +379,18 @@ button:focus-visible, a:focus-visible {
 .mini-header > span:first-child {
     margin-right: auto;
 }
+.mini-nav, .mini-dot {
+    border: 1px solid #35352f;
+}
 .mini-nav {
     width: 78px;
     height: 14px;
-    border: 1px solid #35352f;
     border-radius: 6px;
     background: linear-gradient(90deg, #2e2b23 28%, transparent 28%);
 }
 .mini-dot {
     width: 12px;
     height: 12px;
-    border: 1px solid #35352f;
     border-radius: 5px;
 }
 .mini-catalog {
@@ -511,7 +493,7 @@ button:focus-visible, a:focus-visible {
     color: var(--muted);
 }
 .tool-stack {
-    align-self: center;
+    align-self: start;
 }
 .tool-stack > span {
     display: flex;
@@ -636,56 +618,25 @@ button:focus-visible, a:focus-visible {
     transition: opacity 200ms ease, transform 240ms ease;
     pointer-events: none;
 }
-.page-view.is-entering .reveal {
-    animation: appear 850ms var(--ease) both;
-    animation-delay: calc(var(--reveal-index, 0) * 70ms);
+.page-view.is-entering .reveal, .page-view .language-reveal {
+    animation: var(--reveal-animation, appear) 850ms var(--ease) both;
+    animation-delay: calc(var(--reveal-index, 0) * var(--reveal-delay, 70ms));
 }
 .page-view .language-reveal {
-    animation: language-appear 850ms var(--ease) both;
-    animation-delay: calc(var(--reveal-index, 0) * 40ms);
+    --reveal-animation: language-appear;
+    --reveal-delay: 40ms;
 }
-@keyframes language-appear {
-    from {
-        opacity: 0;
-        filter: blur(5px);
-    }
-    to {
-        opacity: 1;
-        filter: blur(0);
-    }
-}
-.hero-copy > :nth-child(2) {
+.hero-copy > :nth-child(2), .sculpture-stage, .about-copy > :nth-child(1), .contact-row:nth-child(1) {
     --reveal-index: 1;
 }
-.hero-copy > :nth-child(3) {
+.hero-copy > :nth-child(3), .about-copy > :nth-child(2), .tool-stack, .reviews-copy, .contact-row:nth-child(2) {
     --reveal-index: 2;
 }
-.sculpture-stage {
-    --reveal-index: 1;
-}
-.project-link {
-    --reveal-index: 3;
-}
-.about-copy > :nth-child(1) {
-    --reveal-index: 1;
-}
-.about-copy > :nth-child(2) {
-    --reveal-index: 2;
-}
-.about-copy > :nth-child(3) {
+.project-link, .about-copy > :nth-child(3) {
     --reveal-index: 3;
 }
 .about-copy > :nth-child(4) {
     --reveal-index: 4;
-}
-.tool-stack, .reviews-copy {
-    --reveal-index: 2;
-}
-.contact-row:nth-child(1) {
-    --reveal-index: 1;
-}
-.contact-row:nth-child(2) {
-    --reveal-index: 2;
 }
 @keyframes appear {
     from {
@@ -696,6 +647,16 @@ button:focus-visible, a:focus-visible {
     to {
         opacity: 1;
         transform: translateY(0);
+        filter: blur(0);
+    }
+}
+@keyframes language-appear {
+    from {
+        opacity: 0;
+        filter: blur(5px);
+    }
+    to {
+        opacity: 1;
         filter: blur(0);
     }
 }
@@ -876,7 +837,6 @@ button:focus-visible, a:focus-visible {
     .body-copy {
         margin-top: 16px;
         font-size: 16px;
-        line-height: 1.8;
     }
     .tool-stack {
         max-width: 480px;
@@ -914,7 +874,6 @@ button:focus-visible, a:focus-visible {
     }
     .quote-mark {
         width: 70px;
-        margin-right: 0;
     }
 }
 @media (prefers-reduced-motion: reduce) {
