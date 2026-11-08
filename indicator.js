@@ -1,20 +1,39 @@
 export function initializeIndicator(panel, items, getActive, onResize = () => {}) {
+    const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
     let hovered;
+    let position;
+    let width;
     function move(item) {
-        panel.style.setProperty('--nav-x', `${item.offsetLeft}px`);
-        panel.style.setProperty('--nav-width', `${item.offsetWidth}px`);
+        const nextPosition = item.offsetLeft;
+        const nextWidth = item.offsetWidth;
+        if (position !== nextPosition) {
+            position = nextPosition;
+            panel.style.setProperty('--nav-x', `${position}px`);
+        }
+        if (width !== nextWidth) {
+            width = nextWidth;
+            panel.style.setProperty('--nav-width', `${width}px`);
+        }
     }
     function reset() {
-        move(hovered || (items.includes(document.activeElement) ? document.activeElement : getActive()));
+        const focused = items.includes(document.activeElement) && document.activeElement.matches(':focus-visible');
+        move(hovered || (focused ? document.activeElement : getActive()));
     }
     items.forEach(item => {
-        item.addEventListener('pointerenter', () => {
+        item.addEventListener('pointerenter', event => {
+            if (event.pointerType === 'touch' || !finePointer.matches) return;
             hovered = item;
             move(item);
         });
-        item.addEventListener('focus', () => move(item));
+        item.addEventListener('focus', () => {
+            if (item.matches(':focus-visible')) move(item);
+        });
     });
-    panel.addEventListener('pointerleave', () => {
+    panel.addEventListener('pointerdown', event => {
+        if (event.pointerType === 'touch') hovered = null;
+    });
+    panel.addEventListener('pointerleave', event => {
+        if (event.pointerType === 'touch') return;
         hovered = null;
         reset();
     });
