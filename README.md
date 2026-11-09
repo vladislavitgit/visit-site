@@ -1,3 +1,3 @@
 # Визитный сайт
 Мой визитный сайт с демонстрацией дизайна и переходов, контактами и отзывами о моей работе.
-<a href="images/main-screen.png"><img src="images/main-screen.png" width="400" alt="Главная страница - скриншот"></a>
+<a href="images/main-screen.png"><img src="images/main-screen.png" width="100%" alt="Главная страница - скриншот"></a>
