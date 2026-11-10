@@ -1,7 +1,6 @@
 import { initializeIndicator } from './indicator.js';
 
 const messages = {
-    skip: ['К содержимому', 'Skip to content'],
     github: ['My GitHub account', 'My GitHub account'],
     home: ['Главная', 'Home'],
     about: ['Обо мне', 'About me'],
