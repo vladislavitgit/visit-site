@@ -10,6 +10,11 @@
     --highlight: rgb(196 232 180 / .08);
     --page-gutter: clamp(24px, 5.6vw, 80px);
     --ease: cubic-bezier(.22, 1, .36, 1);
+    --nav-x: 0px;
+    --nav-width: 0px;
+    --viewport-width: 100%;
+    --pointer-x: 50%;
+    --pointer-y: 50%;
     font-family: Arial, Helvetica, sans-serif;
     background: var(--background);
 }
