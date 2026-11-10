@@ -17,6 +17,7 @@ const messages = {
     landingTag: ['демо-лендинг', 'landing demo'],
     catalogProject: ['Пример сайта-каталога', 'Product catalog demo'],
     travelProject: ['Пример туристического лендинга', 'Travel landing page demo'],
+    restaurantProject: ['Пример лендинга ресторана', 'Restaurant landing page demo'],
     bioName: ['Меня зовут Владислав,', 'My name is Vladislav.'],
     bioAge: ['мне', 'I’m'],
     bioWork: ['Я занимаюсь веб-разработкой и дизайном простых сайтов и каталогов.', 'I build and design simple websites and product catalogs.'],
