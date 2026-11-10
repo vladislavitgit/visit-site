@@ -13,14 +13,23 @@ export function initializeSculpture(button, reducedMotion) {
     const shapes = [0, 1, 2].map(createShape);
     const projected = shapes[0].map(() => [0, 0, 0]);
     const rowConnectors = [[planetColumns - 1, planetColumns], [columns - 1, 0]];
-    const trailColumns = [0, 8];
+    const trails = [
+        { column: 0, phase: 0, saturnOnly: false },
+        { column: 8, phase: 8 / columns, saturnOnly: false },
+        { column: planetColumns - 1 - 8, phase: 8 / columns + .5, saturnOnly: true },
+        { column: planetColumns, phase: 0, saturnOnly: true }
+    ];
+    const opacityLevels = 32;
+    const rowBatches = Array.from({ length: opacityLevels }, () => []);
+    const rowColors = rowBatches.map((_, index) => `rgba(189, 220, 173, ${index / opacityLevels})`);
     const cosZ = Math.cos(-.36);
     const sinZ = Math.sin(-.36);
     let mode = 0;
     let previousSaturn = 0;
-    let previous = shapes[0];
+    const previous = shapes[0].map(point => [...point]);
     let target = shapes[0];
     let progress = 1;
+    let transitionStarted = 0;
     let width = 0;
     let height = 0;
     let pixelRatio = 0;
@@ -98,9 +107,10 @@ export function initializeSculpture(button, reducedMotion) {
         lastTime = time;
         if (!reducedMotion.matches) {
             angle += delta * .11;
-            progress = Math.min(1, progress + delta / .95);
-            pitch += (targetPitch - pitch) * .09;
-            yaw += (targetYaw - yaw) * .09;
+            progress = Math.min(1, Math.max(0, (time - transitionStarted) / 950));
+            const smoothing = 1 - Math.exp(-delta * 5.66);
+            pitch += (targetPitch - pitch) * smoothing;
+            yaw += (targetYaw - yaw) * smoothing;
         } else {
             progress = 1;
             pitch = targetPitch;
@@ -133,34 +143,48 @@ export function initializeSculpture(button, reducedMotion) {
             output[2] = z2;
         }
         context.lineWidth = .65;
+        rowBatches.forEach(batch => { batch.length = 0; });
         for (let row = 0; row < rows; row++) {
             const start = row * columns;
             const depth = projected[start][2];
             const opacity = .15 + Math.max(0, 2 - depth) * .17;
-            context.strokeStyle = `rgba(189, 220, 173, ${opacity})`;
+            const level = Math.min(opacityLevels - 1, Math.round(opacity * opacityLevels));
+            rowBatches[level].push(start);
+        }
+        for (let level = 0; level < opacityLevels; level++) {
+            const batch = rowBatches[level];
+            if (!batch.length) continue;
+            context.strokeStyle = rowColors[level];
             context.beginPath();
-            for (let column = 0; column < columns; column++) {
-                const point = projected[start + column];
-                if (column === 0 || column === planetColumns) context.moveTo(point[0], point[1]);
-                else context.lineTo(point[0], point[1]);
+            for (const start of batch) {
+                for (let column = 0; column < columns; column++) {
+                    const point = projected[start + column];
+                    if (column === 0 || column === planetColumns) context.moveTo(point[0], point[1]);
+                    else context.lineTo(point[0], point[1]);
+                }
             }
             context.stroke();
             if (saturn > 0) {
-                context.strokeStyle = `rgba(189, 220, 173, ${opacity * saturn})`;
+                context.globalAlpha = saturn;
                 context.beginPath();
-                context.moveTo(projected[start + columns - 1][0], projected[start + columns - 1][1]);
-                context.lineTo(projected[start + planetColumns][0], projected[start + planetColumns][1]);
-                context.stroke();
-            }
-            if (saturn < 1) {
-                context.strokeStyle = `rgba(189, 220, 173, ${opacity * (1 - saturn)})`;
-                context.beginPath();
-                for (const [from, to] of rowConnectors) {
-                    context.moveTo(projected[start + from][0], projected[start + from][1]);
-                    context.lineTo(projected[start + to][0], projected[start + to][1]);
+                for (const start of batch) {
+                    context.moveTo(projected[start + columns - 1][0], projected[start + columns - 1][1]);
+                    context.lineTo(projected[start + planetColumns][0], projected[start + planetColumns][1]);
                 }
                 context.stroke();
             }
+            if (saturn < 1) {
+                context.globalAlpha = 1 - saturn;
+                context.beginPath();
+                for (const start of batch) {
+                    for (const [from, to] of rowConnectors) {
+                        context.moveTo(projected[start + from][0], projected[start + from][1]);
+                        context.lineTo(projected[start + to][0], projected[start + to][1]);
+                    }
+                }
+                context.stroke();
+            }
+            context.globalAlpha = 1;
         }
         for (let column = 0; column < columns; column++) {
             context.strokeStyle = column % 4 === 0 ? 'rgba(212, 239, 199, .65)' : 'rgba(172, 199, 157, .18)';
@@ -173,12 +197,14 @@ export function initializeSculpture(button, reducedMotion) {
             context.stroke();
         }
         context.lineWidth = 1.2;
-        for (const column of trailColumns) {
-            const head = Math.floor((angle * 2 + column / columns) % 1 * rows);
+        for (const { column, phase, saturnOnly } of trails) {
+            const strength = saturnOnly ? saturn : 1;
+            if (!strength) continue;
+            const head = Math.floor((angle * 2 + phase) % 1 * rows);
             for (let step = 0; step < 26; step++) {
                 const a = projected[((head - step + rows) % rows) * columns + column];
                 const b = projected[((head - step - 1 + rows) % rows) * columns + column];
-                const opacity = (1 - step / 26) * .8 / (1 + Math.max(0, a[2]) * .6);
+                const opacity = (1 - step / 26) * .8 * strength / (1 + Math.max(0, a[2]) * .6);
                 context.strokeStyle = `rgba(227, 255, 211, ${opacity})`;
                 context.beginPath();
                 context.moveTo(a[0], a[1]);
@@ -252,10 +278,15 @@ export function initializeSculpture(button, reducedMotion) {
         if (event.detail && distance > 7) return;
         const mix = progress * progress * (3 - 2 * progress);
         previousSaturn += ((mode === 2 ? 1 : 0) - previousSaturn) * mix;
-        previous = target.map((point, index) => point.map((value, axis) => previous[index][axis] + (value - previous[index][axis]) * mix));
+        for (let index = 0; index < target.length; index++) {
+            for (let axis = 0; axis < 3; axis++) {
+                previous[index][axis] += (target[index][axis] - previous[index][axis]) * mix;
+            }
+        }
         mode = (mode + 1) % shapes.length;
         target = shapes[mode];
         progress = 0;
+        transitionStarted = performance.now();
         button.dataset.form = String(mode);
         requestFrame();
     });
