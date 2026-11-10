@@ -1,6 +1,5 @@
 .DS_Store
 .idea/
-telegram-config.local.php
 .env
 .env.*
 !.env.example
